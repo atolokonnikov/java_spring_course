@@ -16,6 +16,14 @@
             margin-bottom: 10px;
         }
 
+        table {
+            margin: 15px;
+        }
+
+        th {
+            text-align: left;
+        }
+
     </style>
 
 </head>
@@ -23,11 +31,29 @@
 <h2>Registration</h2>
 <div id="regaster_form">
     <form method="post" th:action="@{/register/add_user}" th:object="${user}">
-    <input class="register_item" type="text" placeholder="username" th:field="*{login}">
-    <br>
-    <input class="register_item" type="text" placeholder="password" th:field="*{password}">
-    <br>
-    <input class="register_item" type="submit" value="Register">
+        <table>
+            <tr>
+                <td>
+                    <input class="register_item" type="text" placeholder="username" th:field="*{login}">
+                </td>
+                <td th:if="${#fields.hasErrors('login')}">
+                    <p>field must be not empty</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <input class="register_item" type="password" placeholder="password" th:field="*{password}">
+                </td>
+                <td th:if="${#fields.hasErrors('password')}">
+                    <p>field must be not empty and from 2 characters</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <input class="register_item" type="submit" value="Register">
+                </td>
+            </tr>
+        </table>
     </form>
 </div>
 </body>

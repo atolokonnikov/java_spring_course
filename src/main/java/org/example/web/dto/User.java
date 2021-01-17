@@ -1,8 +1,14 @@
 package org.example.web.dto;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Size;
+
 public class User {
 
+    @NotEmpty
     private String login;
+    @NotEmpty
+    @Size(min=2)
     private String password;
 
     public User(String login, String password) {

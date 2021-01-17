@@ -1,0 +1,1 @@
+insert into books(author, title, size) values ('Dostoevsky', 'Idiot',  350);

@@ -6,10 +6,13 @@ import org.example.web.dto.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
+
+import javax.validation.Valid;
 
 @Controller
 @RequestMapping(value = "/register")
@@ -31,9 +34,21 @@ public class RegisterController {
     }
 
     @PostMapping(value = "add_user")
-    public String addUser(User user) {
-        registerService.add_user(user);
-        logger.info("Add user");
-        return "redirect:/login";
+    public String addUser(@Valid User user, BindingResult bindingResult, Model model) {
+        if (bindingResult.hasFieldErrors("login")) {
+            logger.info("bindingResult.hasFieldErrors(\"login\")");
+            model.addAttribute("user", user);
+            return "register_page";
+        }
+        else if (bindingResult.hasFieldErrors("password")) {
+            logger.info("bindingResult.hasFieldErrors(\"password\")");
+            model.addAttribute("user", user);
+            return "register_page";
+        }
+        else {
+            registerService.add_user(user);
+            logger.info("Add user");
+            return "redirect:/login";
+        }
     }
 }
