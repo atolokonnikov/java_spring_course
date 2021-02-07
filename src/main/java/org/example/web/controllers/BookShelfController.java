@@ -21,6 +21,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 
 @Controller
 @RequestMapping(value = "/books")
@@ -28,10 +29,12 @@ public class BookShelfController {
 
     private Logger logger = Logger.getLogger(BookShelfController.class);
     private BookService bookService;
+    private FileService fileService;
 
     @Autowired
-    public BookShelfController(BookService bookService) {
+    public BookShelfController(BookService bookService, FileService fileService) {
         this.bookService = bookService;
+        this.fileService = fileService;
     }
 
     @GetMapping("/shelf")
@@ -39,7 +42,7 @@ public class BookShelfController {
         logger.info("got book shelf");
         model.addAttribute("book", new Book());
         model.addAttribute("bookIdToRemove", new BookIdToRemove());
-        model.addAttribute("downloadPath", new FilesystemPath("c:\\"));
+        model.addAttribute("fileList", FileService.fileList);
         model.addAttribute("bookListFiltered", bookService.getAllBooksFiltered());
         return "book_shelf";
     }
@@ -58,7 +61,7 @@ public class BookShelfController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("book", book);
             model.addAttribute("bookIdToRemove", new BookIdToRemove());
-            model.addAttribute("downloadPath", new FilesystemPath("c:\\"));
+            model.addAttribute("fileList", FileService.fileList);
             model.addAttribute("bookListFiltered", bookService.getAllBooksFiltered());
             return "book_shelf";
         } else {
@@ -74,7 +77,7 @@ public class BookShelfController {
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("book", new Book());
-            model.addAttribute("downloadPath", new FilesystemPath("c:\\"));
+            model.addAttribute("fileList", FileService.fileList);
             model.addAttribute("bookListFiltered", bookService.getAllBooksFiltered());
             return "book_shelf";
         } else {
@@ -124,76 +127,46 @@ public class BookShelfController {
     }
 
     @PostMapping("/uploadFile")
-    public String uploadFile(@RequestParam("file")MultipartFile file) throws Exception{
+    public String uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
         if (!file.isEmpty()) {
-        String name = file.getOriginalFilename();
-        byte[] bytes = file.getBytes();
-
-        //create dir
-            File dir = FileService.TouchDir("external_uploads");
-
-        // create file
-        File serverfile = new File(dir.getAbsolutePath() + File.separator + name);
-        BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(serverfile));
-        stream.write(bytes);
-        stream.close();
-
-        logger.info("new file saved at: " + serverfile.getAbsolutePath());
-
-        return "redirect:/books/shelf";
-    } else {
+            String targetFileFillPath = FileService.TransferFile(file, FileService.GetUploadDirectory());
+            logger.info("new file saved at: " + targetFileFillPath);
+            FileService.AddFileToFileList(targetFileFillPath);
+            return "redirect:/books/shelf";
+        } else {
             throw new UploadFileException("file not defined");
         }
     }
 
     @PostMapping("/downloadFile")
-    public String DownloadFile (@Valid FilesystemPath downloadPath, BindingResult bindingResult, Model model) throws Exception {
+    public String DownloadFile(@RequestParam(value = "fileName") String fileName) throws Exception {
+        String downloadPath = FileService.GetDownloadDirectory();
+        logger.info("downloadPath = " + downloadPath);
+        logger.info("fileName = " + fileName);
 
-        logger.info("downloadPath = " + downloadPath.getPath());
-
-        if (bindingResult.hasErrors()) {
-            logger.info("bindingResult.hasErrors()");
-            model.addAttribute("book", new Book());
-            model.addAttribute("bookIdToRemove", new BookIdToRemove());
-            model.addAttribute("downloadPath", new FilesystemPath(""));
-            model.addAttribute("bookListFiltered", bookService.getAllBooksFiltered());
-            return "book_shelf";
-        } else {
-            try {
-            String fileName = "readme.txt";
-            String fileFullPath = System.getProperty("catalina.home") + File.separator + "shared_files_to_download" + File.separator + fileName;
-            String contentText = "This is the readme.txt";
-            byte[] content = contentText.getBytes();
-            MultipartFile file = new MockMultipartFile(fileFullPath, fileName, "text/plain", content);
-            byte[] bytes = file.getBytes();
-
-
-            // download file
-            File targetFile = new File(downloadPath.getPath() + File.separator + fileName);
-            BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(targetFile));
-            stream.write(bytes);
-            stream.close();
-
-            logger.info("file download complete");
+        try {
+            MultipartFile multipartFile = FileService.GetSourceFileByName(fileName);
+            logger.info("MultipartFile prepared FileService.GetDownloadDirectory() = " + FileService.GetDownloadDirectory());
+            logger.info("multipartFile.getOriginalFilename() = " + multipartFile.getOriginalFilename());
+            String targetFileFillPath = FileService.TransferFile(multipartFile, FileService.GetDownloadDirectory());
+            logger.info("File download complete to: " +targetFileFillPath);
 
             return "redirect:/books/shelf";
-            }
-            catch (IOException e){
-                logger.info(e.getMessage());
-                throw new DownloadFileException(e.getMessage());
-            }
+        } catch (IOException e) {
+            logger.info(e.getMessage());
+            throw new DownloadFileException(e.getMessage());
         }
     }
 
     @ExceptionHandler(UploadFileException.class)
     public String handleError(Model model, UploadFileException exception) {
-        model.addAttribute("errorMessage",exception.getMessage());
+        model.addAttribute("errorMessage", exception.getMessage());
         return "errors/500";
     }
 
     @ExceptionHandler(DownloadFileException.class)
     public String handleError(Model model, DownloadFileException exception) {
-        model.addAttribute("errorMessage",exception.getMessage());
+        model.addAttribute("errorMessage", exception.getMessage());
         return "errors/500";
     }
 }

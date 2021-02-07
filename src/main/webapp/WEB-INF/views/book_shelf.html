@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:tr="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <title>My book shelf</title>
@@ -123,18 +124,15 @@
         </table>
     </form>
 
-    <form method="post" th:action="@{/books/downloadFile}" th:object="${downloadPath}">
+    <form method="post" th:action="@{/books/downloadFile}" th:object="${fileList}">
         <table>
             <tr>
                 <td>
-                    <p>readme.txt</p>
-                </td>
-                <td>
-                    <p>Target directory:</p>
-                </td>
-                <td>
-                    <input type="text" placeholder="Path to save file" th:field="*{path}">
-                    <!--<p th:if="${#fields.hasErrors()}">Path not defined</p>-->
+                    <p>
+                        <select id="fileName" name="fileName">
+                            <option th:each="file : ${fileList}" th:value="${file.getName()}" th:text="${file.getName()}" th:name="fileName"></option>
+                        </select>
+                    </p>
                 </td>
                 <td>
                     <input type="submit" value="Download file"/>
